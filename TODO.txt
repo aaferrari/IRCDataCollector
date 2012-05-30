@@ -2,3 +2,4 @@
 * Permitir que el programa guarde la informacion en algun lado (como un archivo de texto o una base de datos)
 * Documentar el codigo y traducirlo (tanto el script como la respectiva documentacion) a otros idiomas
 * Generar un instalador para poder registrar y usar el script en KVirc
+* Escribir una interfaz grafica para facilitar la configuracion del script a medida que se valla haciendo mas complejo y modular
