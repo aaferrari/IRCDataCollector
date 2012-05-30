@@ -1,0 +1,46 @@
+# Variables globales, son leidas por cualquier funcion que las requieran
+%Patron1 = "([a-zA-Z0-9\.\-\_]+)[^a-zA-Z0-9\.\-\_]*(@|[wW][hH][eE][rR][eE]|[fF][oO][lL][lL][oO][wW][eE][dD] [bB][yY][^a-zA-Z0-9]*@|[^a-zA-Z0-9]+[Aa][Tt][^a-zA-Z0-9;]+)[^a-zA-Z0-9\.\-\_]*([a-zA-Z0-9\.\-\_;]+)";
+%Corrector = '.+([a-zA-Z0-9\.\-\_]+)@([a-zA-Z0-9\.\-\_]+)(\.[a-zA-Z]{2,3}|[aA][eE][rR][oO]|[aA][sS][iI][aA]|[cC][oO][oO][pP]|[iI][nN][fF][oO]|[jJ][oO][bB][sS]|[mM][oO][bB][iI]|[mM][uU][sS][eE][uU][mM]|[nN][aA][mM][eE]|[tT][rR][aA][vV][eE][lL]).+';
+
+event(OnChannelMessage, recabador)
+{
+    %resultados = $array()
+    # Ya que en KVS no existe algo como la funcion re.findall(), entonces se opto por usar
+    # python para procesar el mensaje en busca de resultados (si no se dispone de python,
+    # entonces tambien se lo hara con KVS, pero este ultimo metodo no es tan preciso)
+    if($python.isavailable) {
+        %detecciones = ""
+        python.begin
+        patronus = kvirc.getGlobal("Patron1")
+        verificador = kvirc.getGlobal("Corrector")
+        texto = kvirc.getLocal("$3")
+        import re
+        resultados = re.findall(patronus, texto)
+        # Ya que el kvirc.setGlobal() solo admite string como parametro, entonces
+        # se realiza el proceso correspondiente para convertir la lista de resultados
+        salida = []
+        for resultado in resultados:
+            email = list(resultado)
+            email[1] = '@'
+            salida.append("".join(email))
+        kvirc.setLocal("detecciones", ", ".join(salida))
+        python.end
+        %resultados = %resultados$str.split(", ", %detecciones)
+    }
+    else {
+        %posibilidades = $array(.+%Patron1.+, .+%Patron1$, ^%Patron1.+, %Patron1)
+        foreach(%patron, %posibilidades) { 
+            %busqueda = $str.grep(%Patron1, $3, "rp")
+            %busqueda[0] = 
+            %busqueda[2] = '@'
+            %resultados[$length(%resultados)] = $str.join("", %busqueda, "n")
+        }
+    
+    }
+    # Finalmente verificamos que lo que tenemos son emails y borramos los falsos positivos
+    for(%contador=0; %contador < $length(%resultados); %i++) {
+        if(!$str.grep(%Corrector, %resultados[%contador], "r")) {
+            %resultados[%contador] = 
+        }
+    echo -w=$console %resultados
+}
